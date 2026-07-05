@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Initiative Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0d0b;
+    --surface: #18160f;
+    --surface2: #211e14;
+    --border: #3a3420;
+    --border2: #554e30;
+    --gold: #c9a84c;
+    --gold-dim: #8a6e2e;
+    --gold-glow: #e6c96a;
+    --text: #e8dfc0;
+    --text-dim: #8a8070;
+    --text-muted: #5a5446;
+    --red: #b84040;
+    --red-light: #e06060;
+    --active-bg: #1e1a0a;
+    --active-border: #c9a84c;
+    --player-accent: #4a7ab8;
+    --monster-accent: #b84a4a;
+    --npc-accent: #6ab87a;
+    --radius: 4px;
+    --pending: #554e30;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(201,168,76,0.015) 2px, rgba(201,168,76,0.015) 3px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(201,168,76,0.008) 40px, rgba(201,168,76,0.008) 41px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .header::before, .header::after {
+    content: '⟡';
+    position: absolute;
+    bottom: -0.6em;
+    font-size: 12px;
+    color: var(--gold);
+    background: var(--bg);
+    padding: 0 8px;
+  }
+  .header::before { left: calc(50% - 60px); }
+  .header::after { left: calc(50% + 36px); }
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+  .header .subtitle {
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 15px;
+    letter-spacing: 0.04em;
+  }
+
+  .round-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 0.8rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .round-label {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .round-number {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--gold);
+    line-height: 1;
+    min-width: 3ch;
+    text-align: center;
+  }
+  .round-divider { width: 1px; height: 2rem; background: var(--border); }
+
+  /* Reset banner */
+  .reset-banner {
+    display: none;
+    background: #1a1500;
+    border: 1px solid var(--gold-dim);
+    border-radius: var(--radius);
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1.25rem;
+    font-size: 14px;
+    color: var(--gold);
+    font-style: italic;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .reset-banner.visible { display: block; }
+
+  .add-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .add-section h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 1rem;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 140px 110px auto;
+    gap: 8px;
+    align-items: end;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 16px;
+    padding: 6px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--gold-dim); }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a8070'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+  }
+  select option { background: #18160f; }
+
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: var(--radius);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-add {
+    background: var(--gold-dim);
+    border: 1px solid var(--gold);
+    color: var(--bg);
+    padding: 7px 14px;
+    font-weight: 600;
+  }
+  .btn-add:hover { background: var(--gold); }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    padding: 7px 14px;
+  }
+  .btn-secondary:hover { border-color: var(--gold-dim); color: var(--text); }
+  .btn-danger {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    font-size: 13px;
+  }
+  .btn-danger:hover { color: var(--red-light); border-color: var(--red); }
+
+  .combat-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .btn-next {
+    flex: 1;
+    background: var(--active-bg);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 10px 20px;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+  .btn-next:hover { background: var(--gold); color: var(--bg); }
+  .btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-next:disabled:hover { background: var(--active-bg); color: var(--gold); }
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    padding: 10px 16px;
+    font-size: 11px;
+  }
+  .btn-reset:hover { border-color: var(--red); color: var(--red-light); }
+  .btn-sort {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    padding: 10px 16px;
+    font-size: 11px;
+  }
+  .btn-sort:hover { border-color: var(--gold-dim); color: var(--text); }
+
+  .list-section h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .list-section h2 span { flex: 1; height: 1px; background: var(--border); display: block; }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 15px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+  }
+
+  .combatant-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .combatant {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .combatant::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+  .combatant.player::before { background: var(--player-accent); }
+  .combatant.monster::before { background: var(--monster-accent); }
+  .combatant.npc::before { background: var(--npc-accent); }
+
+  .combatant.active { background: var(--active-bg); border-color: var(--active-border); box-shadow: 0 0 12px rgba(201,168,76,0.08); }
+  .combatant.done { opacity: 0.45; }
+  .combatant.active .combatant-name { color: var(--gold); }
+
+  /* Pending-initiative state (after reset) */
+  .combatant.pending-init {
+    border-style: dashed;
+    border-color: var(--pending);
+  }
+  .combatant.pending-init .init-badge { color: var(--text-muted); }
+
+  .turn-indicator { width: 18px; flex-shrink: 0; text-align: center; font-size: 13px; color: var(--gold); }
+  .turn-indicator.active-arrow { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Inline initiative input (shown during reset mode) */
+  .init-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .init-inline {
+    width: 52px !important;
+    font-family: 'Cinzel', serif !important;
+    font-size: 15px !important;
+    font-weight: 600;
+    text-align: center;
+    padding: 3px 6px !important;
+    background: var(--bg) !important;
+    border: 1px solid var(--gold-dim) !important;
+    color: var(--text) !important;
+  }
+  .init-inline:focus { border-color: var(--gold) !important; }
+  .btn-set-init {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    background: var(--gold-dim);
+    border: 1px solid var(--gold);
+    color: var(--bg);
+    padding: 3px 7px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .btn-set-init:hover { background: var(--gold); }
+
+  .init-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    font-weight: 600;
+    min-width: 2.5ch;
+    text-align: center;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .combatant.active .init-badge { color: var(--gold-glow); }
+
+  .badge-divider { width: 1px; height: 1.4rem; background: var(--border); flex-shrink: 0; }
+
+  .combatant-info { flex: 1; min-width: 0; }
+  .combatant-name { font-size: 17px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+  .combatant-type { font-size: 12px; color: var(--text-muted); letter-spacing: 0.06em; font-style: italic; }
+  .combatant.player .combatant-type { color: #4a7ab8; }
+  .combatant.monster .combatant-type { color: #8a4040; }
+  .combatant.npc .combatant-type { color: #4a7a5a; }
+
+  .pos-num { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); flex-shrink: 0; min-width: 1.5ch; text-align: right; }
+
+  @media (max-width: 560px) {
+    .form-row { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
+    .form-row .field:first-child { grid-column: 1 / -1; }
+    .form-row .btn-add { grid-column: 1 / -1; width: 100%; }
+    .header h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <h1>Initiative Tracker</h1>
+    <div class="subtitle">D&amp;D 5th Edition</div>
+  </header>
+
+  <div class="round-bar">
+    <div style="text-align:center">
+      <div class="round-label">Round</div>
+      <div class="round-number" id="round-num">—</div>
+    </div>
+    <div class="round-divider"></div>
+    <div style="text-align:center">
+      <div class="round-label">Turn</div>
+      <div class="round-number" id="turn-num">—</div>
+    </div>
+    <div class="round-divider"></div>
+    <div style="text-align:center">
+      <div class="round-label">Combatants</div>
+      <div class="round-number" id="count-num">0</div>
+    </div>
+  </div>
+
+  <div id="reset-banner" class="reset-banner">
+    New encounter — enter initiative rolls below, then sort to begin.
+  </div>
+
+  <div class="add-section">
+    <h2>Add Combatant</h2>
+    <div class="form-row">
+      <div class="field">
+        <label for="inp-name">Name</label>
+        <input type="text" id="inp-name" placeholder="e.g. Gandalf, Goblin 1" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-type">Type</label>
+        <select id="inp-type">
+          <option value="player">Player</option>
+          <option value="monster">Monster</option>
+          <option value="npc">NPC</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="inp-init">Initiative</label>
+        <input type="number" id="inp-init" placeholder="e.g. 18.5" min="-5" max="40" step="0.01">
+      </div>
+      <div class="field" style="display:flex;align-items:flex-end">
+        <button class="btn btn-add" id="btn-add">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="list-section">
+    <h2>Order of Battle <span></span></h2>
+    <div id="list-wrap">
+      <div class="empty-state" id="empty-state">
+        No combatants yet — add players and monsters above, then sort to begin.
+      </div>
+      <div class="combatant-list" id="combatant-list" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="combat-controls" style="margin-top:1.5rem">
+    <button class="btn btn-next" id="btn-next" disabled>▶ Next Turn</button>
+    <button class="btn btn-sort" id="btn-sort">⇅ Sort by Init</button>
+    <button class="btn btn-reset" id="btn-reset">↺ Reset Combat</button>
+    <button class="btn btn-secondary" id="btn-clear">✕ Clear All</button>
+  </div>
+
+</div>
+
+<script>
+  let combatants = [];
+  let activeIndex = -1;
+  let round = 0;
+  let started = false;
+  let resetMode = false; // true after Reset Combat, until Next Turn starts
+
+  const nameInp = document.getElementById('inp-name');
+  const typeInp = document.getElementById('inp-type');
+  const initInp = document.getElementById('inp-init');
+
+  document.getElementById('btn-add').addEventListener('click', addCombatant);
+  document.getElementById('btn-next').addEventListener('click', nextTurn);
+  document.getElementById('btn-sort').addEventListener('click', () => sortList());
+  document.getElementById('btn-reset').addEventListener('click', resetCombat);
+  document.getElementById('btn-clear').addEventListener('click', clearAll);
+
+  nameInp.addEventListener('keydown', e => { if (e.key === 'Enter') addCombatant(); });
+  initInp.addEventListener('keydown', e => { if (e.key === 'Enter') addCombatant(); });
+
+  document.getElementById('combatant-list').addEventListener('click', e => {
+    const removeBtn = e.target.closest('[data-remove]');
+    if (removeBtn) { removeCombatant(Number(removeBtn.dataset.remove)); return; }
+    const setBtn = e.target.closest('[data-set-init]');
+    if (setBtn) {
+      const id = Number(setBtn.dataset.setInit);
+      const input = setBtn.previousElementSibling;
+      setInlineInit(id, input);
+    }
+  });
+  document.getElementById('combatant-list').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const input = e.target.closest('[data-init-for]');
+    if (input) setInlineInit(Number(input.dataset.initFor), input);
+  });
+
+  function addCombatant() {
+    const name = nameInp.value.trim();
+    const type = typeInp.value;
+    const init = parseFloat(initInp.value);
+    if (!name) { nameInp.focus(); return; }
+    if (isNaN(init)) { initInp.focus(); return; }
+    combatants.push({ id: Date.now() + Math.random(), name, type, init, pending: false });
+    nameInp.value = '';
+    initInp.value = '';
+    nameInp.focus();
+    if (!started && !resetMode) sortList(true);
+    else render();
+  }
+
+  function removeCombatant(id) {
+    const idx = combatants.findIndex(c => c.id === id);
+    if (idx === -1) return;
+    combatants.splice(idx, 1);
+    if (activeIndex >= combatants.length) activeIndex = combatants.length - 1;
+    render();
+  }
+
+  // Called from inline input — update a single combatant's init and re-sort
+  function setInlineInit(id, inputEl) {
+    const val = parseFloat(inputEl.value);
+    if (isNaN(val)) return;
+    const c = combatants.find(x => x.id === id);
+    if (!c) return;
+    c.init = val;
+    c.pending = false;
+    // Re-sort the list live
+    combatants.sort((a, b) => {
+      // pending items sink to the bottom
+      if (a.pending && !b.pending) return 1;
+      if (!a.pending && b.pending) return -1;
+      return b.init - a.init || a.name.localeCompare(b.name);
+    });
+    render();
+  }
+
+  function sortList(silent) {
+    combatants.sort((a, b) => b.init - a.init || a.name.localeCompare(b.name));
+    if (!silent) {
+      started = false;
+      activeIndex = -1;
+      round = 0;
+      resetMode = false;
+    }
+    render();
+  }
+
+  function nextTurn() {
+    if (combatants.length === 0) return;
+    resetMode = false;
+    if (!started) {
+      started = true;
+      activeIndex = 0;
+      round = 1;
+    } else {
+      activeIndex++;
+      if (activeIndex >= combatants.length) {
+        activeIndex = 0;
+        round++;
+      }
+    }
+    render();
+  }
+
+  function resetCombat() {
+    started = false;
+    activeIndex = -1;
+    round = 0;
+    resetMode = true;
+    // Keep monsters as-is (they'll be replaced anyway), zero out players & NPCs
+    combatants.forEach(c => {
+      if (c.type === 'player' || c.type === 'npc') {
+        c.init = 0;
+        c.pending = true;
+      }
+      // Monsters keep their init but are also marked pending so DM re-rolls them
+      if (c.type === 'monster') {
+        c.init = 0;
+        c.pending = true;
+      }
+    });
+    render();
+  }
+
+  function clearAll() {
+    if (combatants.length > 0 && !confirm('Clear all combatants?')) return;
+    combatants = [];
+    started = false;
+    activeIndex = -1;
+    round = 0;
+    resetMode = false;
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById('combatant-list');
+    const empty = document.getElementById('empty-state');
+    const roundNum = document.getElementById('round-num');
+    const turnNum = document.getElementById('turn-num');
+    const countNum = document.getElementById('count-num');
+    const btnNext = document.getElementById('btn-next');
+    const banner = document.getElementById('reset-banner');
+
+    countNum.textContent = combatants.length;
+    banner.classList.toggle('visible', resetMode);
+
+    if (combatants.length === 0) {
+      list.style.display = 'none';
+      empty.style.display = '';
+      roundNum.textContent = '—';
+      turnNum.textContent = '—';
+      btnNext.disabled = true;
+      return;
+    }
+
+    empty.style.display = 'none';
+    list.style.display = 'flex';
+    btnNext.disabled = false;
+
+    roundNum.textContent = round > 0 ? round : '—';
+    turnNum.textContent = (started && activeIndex >= 0) ? activeIndex + 1 : '—';
+
+    list.innerHTML = combatants.map((c, i) => {
+      const isActive = started && i === activeIndex;
+      const isDone = started && i < activeIndex;
+      const typeLabel = c.type.charAt(0).toUpperCase() + c.type.slice(1);
+
+      let indicator = '';
+      if (isActive) indicator = '<span class="turn-indicator active-arrow">▶</span>';
+      else if (isDone) indicator = '<span class="turn-indicator" style="color:var(--text-muted)">✓</span>';
+      else indicator = '<span class="turn-indicator"></span>';
+
+      // In resetMode show inline input; otherwise show static badge
+      let initDisplay;
+      if (resetMode) {
+        initDisplay = `<div class="init-input-wrap">
+          <input class="init-inline" type="number" value="${c.pending ? '' : c.init}"
+            placeholder="—" min="-5" max="40" step="0.01" data-init-for="${c.id}"
+            title="Enter initiative for ${escHtml(c.name)}">
+          <button class="btn-set-init" data-set-init="${c.id}">Set</button>
+        </div>`;
+      } else {
+        initDisplay = `<div class="init-badge">${c.pending ? '—' : c.init}</div>`;
+      }
+
+      const pendingClass = c.pending ? ' pending-init' : '';
+
+      return `<div class="combatant ${c.type}${isActive ? ' active' : ''}${isDone ? ' done' : ''}${pendingClass}">
+        ${indicator}
+        ${initDisplay}
+        <div class="badge-divider"></div>
+        <div class="combatant-info">
+          <div class="combatant-name">${escHtml(c.name)}</div>
+          <div class="combatant-type">${typeLabel}</div>
+        </div>
+        <div class="pos-num">#${i + 1}</div>
+        <button class="btn btn-danger" data-remove="${c.id}" title="Remove">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  render();
+</script>
+</body>
+</html>
